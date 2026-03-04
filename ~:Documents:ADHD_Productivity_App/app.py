@@ -819,43 +819,39 @@ def render_calendar():
 """
             )
 
-                    if google_cal.has_credentials_file():
-                if st.button("🖗 Connect Google Calendar", type="primary"):
-                    try:
-                        _, auth_url = google_cal.get_auth_url()
-                        st.session_state["oauth_url"] = auth_url
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Failed to start authorization: {e}")
+                                            if google_cal.has_credentials_file():
+                if "oauth_url" not in st.session_state:
+                    if st.button("🖗 Connect Google Calendar", type="primary"):
+                        try:
+                            _, auth_url = google_cal.get_auth_url()
+                            st.session_state["oauth_url"] = auth_url
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Failed to start authorization: {e}")
+                else:
+                    st.info("🔗 **Step 1:** Click the link below to authorize Google Calendar:")
+                    st.markdown(f"[Click here to authorize]({st.session_state['oauth_url']})")
+                    st.info("📋 **Step 2:** After authorizing, Google will show you a code. Paste it below:")
+                    auth_code = st.text_input("Paste authorization code here:", key="auth_code_input")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("✅ Submit Code", type="primary"):
+                            if auth_code:
+                                try:
+                                    google_cal.exchange_code_for_token(auth_code.strip())
+                                    del st.session_state["oauth_url"]
+                                    st.success("✅ Connected! Refreshing…")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Authorization failed: {e}")
+                            else:
+                                st.warning("Please paste the authorization code first.")
+                    with col2:
+                        if st.button("❌ Cancel"):
+                            del st.session_state["oauth_url"]
+                            st.rerun()
             else:
-                st.info("🔗 **Step 1:** Click the link below to authorize Google Calendar:")
-                st.markdown(f"[Click here to authorize]({st.session_state['oauth_url']})")
-                st.info("📋 **Step 2:** After authorizing, Google will show you a code. Paste it below:")
-                auth_code = st.text_input("Paste authorization code here:", key="auth_code_input")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("✅ Submit Code", type="primary"):
-                        if auth_code:
-                            try:
-                                google_cal.exchange_code_for_token(auth_code.strip())
-                                del st.session_state["oauth_url"]
-                                st.success("✅ Connected! Refreshing…")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Authorization failed: {e}")
-                        else:
-                            st.warning("Please paste the authorization code first.")
-                with col2:
-                    if st.button("❌ Cancel"):
-                        del st.session_state["oauth_url"]
-                        st.rerun()
-        else:
-            st.info("📁 Place `credentials.json` in your app folder, then return here.")
-    # ── Create Time Block ──
-    st.markdown("### 🎨 Create Time Block")
-    tb1, tb2, tb3 = st.columns(3)
-    with tb1:
-        tb_title = st.text_input("Block title", placeholder="e.g., Deep work: Project X", key="tb_title")
+                st.info("📁 Place `credentials.json` in your app folder, then return here.")
         tb_type = st.selectbox("Type", list(BLOCK_TYPES.keys()), key="tb_type")
     with tb2:
         tb_date = st.date_input("Date", value=datetime.date.today(), key="tb_date")
