@@ -782,12 +782,7 @@ def render_notes():
 
 def render_calendar():
     st.markdown("## 📅 Calendar")
-    
-            "Google Calendar libraries not installed.\n\n"
-            "Run: `pip install google-auth-oauthlib google-api-python-client`"
-        )
-        return
-
+   
         cal_service = google_cal.get_service()
     # Auto-detect OAuth code from URL redirect
     query_params = st.query_params
