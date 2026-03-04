@@ -2,6 +2,8 @@
 google_cal.py — Google Calendar integration for ADHD Productivity App
 """
 import datetime
+import json
+import os
 from pathlib import Path
 
 CREDS_FILE = Path(__file__).parent / "credentials.json"
@@ -10,10 +12,9 @@ SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 try:
     from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google_auth_oauthlib.flow import Flow
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
-
     GOOGLE_AVAILABLE = True
 except ImportError:
     GOOGLE_AVAILABLE = False
@@ -33,7 +34,6 @@ def get_service():
         return None
     if not TOKEN_FILE.exists():
         return None
-
     try:
         creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
         if creds and creds.expired and creds.refresh_token:
@@ -47,10 +47,10 @@ def get_service():
     return None
 
 
-def run_auth_flow():
+def get_auth_url():
     """
-    Open browser for OAuth. Returns True on success, False on failure.
-    Raises an exception with a message on error.
+    Generate the Google OAuth authorization URL.
+    Returns (flow, auth_url) tuple.
     """
     if not GOOGLE_AVAILABLE:
         raise RuntimeError("Google libraries not installed.")
@@ -59,8 +59,26 @@ def run_auth_flow():
             f"credentials.json not found at {CREDS_FILE}. "
             "Download it from Google Cloud Console."
         )
-    flow = InstalledAppFlow.from_client_secrets_file(str(CREDS_FILE), SCOPES)
-    creds = flow.run_local_server(port=0)
+    flow = Flow.from_client_secrets_file(
+        str(CREDS_FILE),
+        scopes=SCOPES,
+        redirect_uri="urn:ietf:wg:oauth:2.0:oob"
+    )
+    auth_url, _ = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent"
+    )
+    return flow, auth_url
+
+
+def exchange_code_for_token(flow, code):
+    """
+    Exchange the authorization code for credentials and save token.json.
+    Returns True on success.
+    """
+    flow.fetch_token(code=code)
+    creds = flow.credentials
     with open(str(TOKEN_FILE), "w") as f:
         f.write(creds.to_json())
     return True
@@ -96,7 +114,7 @@ def get_upcoming_events(service, max_results=25):
 def create_event(service, title, start_dt, end_dt, description="", color_id=None):
     """
     Create a Google Calendar event.
-    color_id: 1–11 (Google Calendar color IDs)
+    color_id: 1-11 (Google Calendar color IDs)
     Returns the created event ID or None.
     """
     if not service:
@@ -107,11 +125,11 @@ def create_event(service, title, start_dt, end_dt, description="", color_id=None
             "description": description,
             "start": {
                 "dateTime": start_dt.isoformat(),
-                "timeZone": "America/Los_Angeles",
+                "timeZone": "America/Chicago",
             },
             "end": {
                 "dateTime": end_dt.isoformat(),
-                "timeZone": "America/Los_Angeles",
+                "timeZone": "America/Chicago",
             },
         }
         if color_id:
