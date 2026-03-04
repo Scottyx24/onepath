@@ -783,14 +783,14 @@ def render_notes():
 def render_calendar():
     st.markdown("## 📅 Calendar")
 
-    if not google_cal.is_available():
-               st.error(
+       if not google_cal.is_available():
+        st.error(
             "Google Calendar libraries not installed.\n\n"
             "Run: `pip install google-auth-oauthlib google-api-python-client`"
         )
-                return
+        return
+
     # Auto-detect OAuth code from URL redirect
-                # Auto-detect OAuth code from URL redirect
     query_params = st.query_params
     if "code" in query_params:
         auth_code = query_params["code"]
@@ -802,11 +802,6 @@ def render_calendar():
             st.rerun()
         except Exception as e:
             st.error(f"Authorization failed: {e}")
-            "Run: `pip install google-auth-oauthlib google-api-python-client`"
-        )
-        return
-
-    cal_service = google_cal.get_service()
 
     # ── Connection status ──
     if cal_service:
