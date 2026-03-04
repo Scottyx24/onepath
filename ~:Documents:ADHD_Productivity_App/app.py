@@ -782,8 +782,7 @@ def render_notes():
 
 def render_calendar():
     st.markdown("## 📅 Calendar")
-
-        st.error(
+    
             "Google Calendar libraries not installed.\n\n"
             "Run: `pip install google-auth-oauthlib google-api-python-client`"
         )
