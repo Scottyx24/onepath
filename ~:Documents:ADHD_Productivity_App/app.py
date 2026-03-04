@@ -850,8 +850,8 @@ def render_calendar():
                         if st.button("❌ Cancel"):
                             del st.session_state["oauth_url"]
                             st.rerun()
-            else:
-                st.info("📁 Place `credentials.json` in your app folder, then return here.")
+        else:
+            st.info("📁 Place `credentials.json` in your app folder, then return here.")
     st.divider()
     st.markdown("### ➕ Add Time Block")
     with st.expander("Add a new time block"):
