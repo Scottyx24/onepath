@@ -819,7 +819,7 @@ def render_calendar():
 """
             )
 
-        if google_cal.has_credentials_file():
+                    if google_cal.has_credentials_file():
                 if "oauth_url" not in st.session_state:
                     if st.button("🖗 Connect Google Calendar", type="primary"):
                         try:
