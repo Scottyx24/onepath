@@ -786,6 +786,19 @@ def render_calendar():
     if not google_cal.is_available():
         st.error(
             "Google Calendar libraries not installed.\n\n"
+
+                # Auto-detect OAuth code from URL redirect
+    query_params = st.query_params
+    if "code" in query_params:
+        auth_code = query_params["code"]
+        try:
+            google_cal.exchange_code_for_token(auth_code)
+            # Clear query params after successful exchange
+            st.query_params.clear()
+            st.success("✅ Connected to Google Calendar!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Authorization failed: {e}")
             "Run: `pip install google-auth-oauthlib google-api-python-client`"
         )
         return
@@ -831,24 +844,10 @@ def render_calendar():
                 else:
                     st.info("🔗 **Step 1:** Click the link below to authorize Google Calendar:")
                     st.markdown(f"[Click here to authorize]({st.session_state['oauth_url']})")
-                    st.info("📋 **Step 2:** After authorizing, Google will show you a code. Paste it below:")
-                    auth_code = st.text_input("Paste authorization code here:", key="auth_code_input")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("✅ Submit Code", type="primary"):
-                            if auth_code:
-                                try:
-                                    google_cal.exchange_code_for_token(auth_code.strip())
-                                    del st.session_state["oauth_url"]
-                                    st.success("✅ Connected! Refreshing…")
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Authorization failed: {e}")
-                            else:
-                                st.warning("Please paste the authorization code first.")
-                    with col2:
-                        if st.button("❌ Cancel"):
-                            del st.session_state["oauth_url"]
+                st.info("🔗 After authorizing, you'll be redirected back to this app automatically.")
+                if st.button("❌ Cancel"):
+                    del st.session_state["oauth_url"]
+                    st.rerun()                            del st.session_state["oauth_url"]
                             st.rerun()
         else:
             st.info("📁 Place `credentials.json` in your app folder, then return here.")
