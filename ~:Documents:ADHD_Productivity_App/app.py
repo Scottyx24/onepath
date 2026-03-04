@@ -790,6 +790,7 @@ def render_calendar():
         )
         return
 
+        cal_service = google_cal.get_service()
     # Auto-detect OAuth code from URL redirect
     query_params = st.query_params
     if "code" in query_params:
@@ -845,8 +846,7 @@ def render_calendar():
                 st.info("🔗 After authorizing, you'll be redirected back to this app automatically.")
                 if st.button("❌ Cancel"):
                     del st.session_state["oauth_url"]
-                    st.rerun()                            del st.session_state["oauth_url"]
-                            st.rerun()
+                                        st.rerun()
         else:
             st.info("📁 Place `credentials.json` in your app folder, then return here.")
     st.divider()
