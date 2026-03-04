@@ -9,7 +9,7 @@ from pathlib import Path
 CREDS_FILE = Path(__file__).parent / "credentials.json"
 TOKEN_FILE = Path(__file__).parent / "token.json"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
+REDIRECT_URI = "https://onepath-cajvghjubur5zfirt5v3eh.streamlit.app/"
 
 try:
     from google.oauth2.credentials import Credentials
