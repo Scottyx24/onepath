@@ -788,7 +788,7 @@ def render_calendar():
             "Google Calendar libraries not installed.\n\n"
             "Run: `pip install google-auth-oauthlib google-api-python-client`"
         )
-        return
+                return
     # Auto-detect OAuth code from URL redirect
                 # Auto-detect OAuth code from URL redirect
     query_params = st.query_params
