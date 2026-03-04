@@ -784,9 +784,12 @@ def render_calendar():
     st.markdown("## 📅 Calendar")
 
     if not google_cal.is_available():
-        st.error(
+               st.error(
             "Google Calendar libraries not installed.\n\n"
-
+            "Run: `pip install google-auth-oauthlib google-api-python-client`"
+        )
+        return
+    # Auto-detect OAuth code from URL redirect
                 # Auto-detect OAuth code from URL redirect
     query_params = st.query_params
     if "code" in query_params:
