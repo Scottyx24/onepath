@@ -94,6 +94,7 @@ def _ss(key, default):
     if key not in st.session_state:
         st.session_state[key] = default
 
+db.init_db()
 _ss("energy_level", db.get_setting("energy_level", "medium"))
 _ss("bad_brain_day", db.get_setting("bad_brain_day", "false") == "true")
 _ss("pomo_task_id", None)
