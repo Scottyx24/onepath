@@ -1,20 +1,21 @@
 """
 google_cal.py — Google Calendar integration for ADHD Productivity App
+Uses manual OAuth code flow — compatible with Streamlit Cloud (no browser needed).
 """
 import datetime
 import json
-import os
 from pathlib import Path
 
 CREDS_FILE = Path(__file__).parent / "credentials.json"
 TOKEN_FILE = Path(__file__).parent / "token.json"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
+REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
 
 try:
     from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import Flow
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
+    import google.oauth2.credentials
     GOOGLE_AVAILABLE = True
 except ImportError:
     GOOGLE_AVAILABLE = False
@@ -49,8 +50,8 @@ def get_service():
 
 def get_auth_url():
     """
-    Generate the Google OAuth authorization URL.
-    Returns (flow, auth_url) tuple.
+    Build the Google OAuth URL manually without opening a browser.
+    Returns (client_id, auth_url) so app.py can store client_id for token exchange.
     """
     if not GOOGLE_AVAILABLE:
         raise RuntimeError("Google libraries not installed.")
@@ -59,28 +60,78 @@ def get_auth_url():
             f"credentials.json not found at {CREDS_FILE}. "
             "Download it from Google Cloud Console."
         )
-    flow = Flow.from_client_secrets_file(
-        str(CREDS_FILE),
-        scopes=SCOPES,
-        redirect_uri="urn:ietf:wg:oauth:2.0:oob"
-    )
-    auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent"
-    )
-    return flow, auth_url
+    with open(str(CREDS_FILE), "r") as f:
+        creds_data = json.load(f)
+
+    # Support both 'installed' and 'web' credential types
+    info = creds_data.get("installed") or creds_data.get("web")
+    if not info:
+        raise ValueError("Invalid credentials.json format.")
+
+    client_id = info["client_id"]
+    auth_uri = info.get("auth_uri", "https://accounts.google.com/o/oauth2/auth")
+
+    from urllib.parse import urlencode
+    params = {
+        "client_id": client_id,
+        "redirect_uri": REDIRECT_URI,
+        "response_type": "code",
+        "scope": " ".join(SCOPES),
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    auth_url = auth_uri + "?" + urlencode(params)
+    return client_id, auth_url
 
 
-def exchange_code_for_token(flow, code):
+def exchange_code_for_token(code):
     """
-    Exchange the authorization code for credentials and save token.json.
+    Exchange the authorization code for tokens and save token.json.
     Returns True on success.
     """
-    flow.fetch_token(code=code)
-    creds = flow.credentials
+    if not CREDS_FILE.exists():
+        raise FileNotFoundError("credentials.json not found.")
+
+    with open(str(CREDS_FILE), "r") as f:
+        creds_data = json.load(f)
+
+    info = creds_data.get("installed") or creds_data.get("web")
+    if not info:
+        raise ValueError("Invalid credentials.json format.")
+
+    import urllib.request
+    from urllib.parse import urlencode
+
+    token_uri = info.get("token_uri", "https://oauth2.googleapis.com/token")
+    data = urlencode({
+        "code": code,
+        "client_id": info["client_id"],
+        "client_secret": info["client_secret"],
+        "redirect_uri": REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }).encode("utf-8")
+
+    req = urllib.request.Request(token_uri, data=data, method="POST")
+    req.add_header("Content-Type", "application/x-www-form-urlencoded")
+
+    with urllib.request.urlopen(req) as resp:
+        token_data = json.loads(resp.read().decode("utf-8"))
+
+    if "error" in token_data:
+        raise RuntimeError(f"Token exchange failed: {token_data['error']} - {token_data.get('error_description', '')}")
+
+    # Build a credentials-compatible token file
+    token_json = {
+        "token": token_data.get("access_token"),
+        "refresh_token": token_data.get("refresh_token"),
+        "token_uri": token_uri,
+        "client_id": info["client_id"],
+        "client_secret": info["client_secret"],
+        "scopes": SCOPES,
+    }
     with open(str(TOKEN_FILE), "w") as f:
-        f.write(creds.to_json())
+        json.dump(token_json, f)
+
     return True
 
 
