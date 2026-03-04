@@ -820,14 +820,39 @@ def render_calendar():
             )
 
         if google_cal.has_credentials_file():
-            if st.button("🔗 Connect Google Calendar", type="primary"):
-                with st.spinner("Opening browser for authorization…"):
+            if "oauth_flow" not in st.session_state:
+                if st.button("🖗 Connect Google Calendar", type="primary"):
                     try:
-                        google_cal.run_auth_flow()
-                        st.success("✅ Connected! Refreshing…")
+                        flow, auth_url = google_cal.get_auth_url()
+                        st.session_state["oauth_flow"] = flow
+                        st.session_state["oauth_url"] = auth_url
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Authorization failed: {e}")
+                        st.error(f"Failed to start authorization: {e}")
+            else:
+                st.info("🔗 **Step 1:** Click the link below to authorize Google Calendar access:")
+                st.markdown(f"[Click here to authorize]({st.session_state['oauth_url']})")
+                st.info("📋 **Step 2:** After authorizing, paste the code you received below:")
+                auth_code = st.text_input("Paste authorization code here:", key="auth_code_input")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("✅ Submit Code", type="primary"):
+                        if auth_code:
+                            try:
+                                google_cal.exchange_code_for_token(st.session_state["oauth_flow"], auth_code.strip())
+                                del st.session_state["oauth_flow"]
+                                del st.session_state["oauth_url"]
+                                st.success("✅ Connected! Refreshing…")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Authorization failed: {e}")
+                        else:
+                            st.warning("Please paste the authorization code first.")
+                with col2:
+                    if st.button("❌ Cancel"):
+                        del st.session_state["oauth_flow"]
+                        del st.session_state["oauth_url"]
+                        st.rerun()
         else:
             st.info("📁 Place `credentials.json` in your app folder, then return here.")
 
