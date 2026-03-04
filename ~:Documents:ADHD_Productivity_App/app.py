@@ -819,28 +819,25 @@ def render_calendar():
 """
             )
 
-        if google_cal.has_credentials_file():
-            if "oauth_flow" not in st.session_state:
+                    if google_cal.has_credentials_file():
                 if st.button("🖗 Connect Google Calendar", type="primary"):
                     try:
-                        flow, auth_url = google_cal.get_auth_url()
-                        st.session_state["oauth_flow"] = flow
+                        _, auth_url = google_cal.get_auth_url()
                         st.session_state["oauth_url"] = auth_url
                         st.rerun()
                     except Exception as e:
                         st.error(f"Failed to start authorization: {e}")
             else:
-                st.info("🔗 **Step 1:** Click the link below to authorize Google Calendar access:")
+                st.info("🔗 **Step 1:** Click the link below to authorize Google Calendar:")
                 st.markdown(f"[Click here to authorize]({st.session_state['oauth_url']})")
-                st.info("📋 **Step 2:** After authorizing, paste the code you received below:")
+                st.info("📋 **Step 2:** After authorizing, Google will show you a code. Paste it below:")
                 auth_code = st.text_input("Paste authorization code here:", key="auth_code_input")
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("✅ Submit Code", type="primary"):
                         if auth_code:
                             try:
-                                google_cal.exchange_code_for_token(st.session_state["oauth_flow"], auth_code.strip())
-                                del st.session_state["oauth_flow"]
+                                google_cal.exchange_code_for_token(auth_code.strip())
                                 del st.session_state["oauth_url"]
                                 st.success("✅ Connected! Refreshing…")
                                 st.rerun()
@@ -850,14 +847,10 @@ def render_calendar():
                             st.warning("Please paste the authorization code first.")
                 with col2:
                     if st.button("❌ Cancel"):
-                        del st.session_state["oauth_flow"]
                         del st.session_state["oauth_url"]
                         st.rerun()
         else:
             st.info("📁 Place `credentials.json` in your app folder, then return here.")
-
-    st.divider()
-
     # ── Create Time Block ──
     st.markdown("### 🎨 Create Time Block")
     tb1, tb2, tb3 = st.columns(3)
