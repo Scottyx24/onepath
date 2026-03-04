@@ -852,7 +852,13 @@ def render_calendar():
                             st.rerun()
             else:
                 st.info("📁 Place `credentials.json` in your app folder, then return here.")
-        tb_type = st.selectbox("Type", list(BLOCK_TYPES.keys()), key="tb_type")
+    st.divider()
+    st.markdown("### ➕ Add Time Block")
+    with st.expander("Add a new time block"):
+        tb1, tb2, tb3 = st.columns(3)
+        with tb1:
+            tb_title = st.text_input("Title", placeholder="e.g. Deep Work — Report", key="tb_title")
+                    tb_type = st.selectbox("Type", list(BLOCK_TYPES.keys()), key="tb_type")
     with tb2:
         tb_date = st.date_input("Date", value=datetime.date.today(), key="tb_date")
         tb_start = st.time_input("Start time", value=datetime.time(9, 0), key="tb_start")
